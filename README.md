@@ -1,9 +1,22 @@
-# Formation-Jetson-IA
+# Formation Jetson IA
 
-##Pré-requis :
+## Pré-requis :
 * 1 carte Jetson Nano avec carte SD et alimentation avec écran, clavier et souris
 * 1 PC Windows, Mac ou Linux
 * 1 adaptateur Micro-SD
+* Connexion internet filaire
+
+## Programme:
+### Jour 1 :
+* Prise en main de la Jetson Nano
+* Cas d'école : la classification d'image avec Tensorflow
+* Cas d'école 2 : la détection d'objets avec Tensorflow et OpenCV
+* Discussion autour de l'apprentissage : moyens et méthodes
+
+### Jour 2 :
+* Comparaison CPU - GPU sur la Jetson Nano
+* Estimation de la consommation énergétique du module embarqué
+* Open project et/ou configuration de la Jetson Nano 
 
 # Flash de la jetson Nano
 * Télécharger l'image de la carte SD officielle de NVIDIA : https://developer.nvidia.com/embedded/jetpack#install
@@ -16,7 +29,14 @@
 * Laisser "Volume label" vide
 * Cliquer sur "Format"
 
-## Préparation de la carte SD sur Mac ou Linux :
+## Préparation de la carte SD sur Mac 
+* `diskutil list external | fgrep '/dev/disk'`
+* `sudo diskutil partitionDisk /dev/disk<n> 1 GPT "Free Space" "%noformat%" 100%` avec <n> le numéro du disk correspondant à la carte SD
+* Télécharget et installer Etcher : https://www.balena.io/etcher
+* Sélectionner l'image zippée
+* Insérer la carte SD et ignorer l'éventuel message d'erreur
+
+## Préparation de la carte SD sur Linux
 * Télécharget et installer Etcher : https://www.balena.io/etcher
 * Sélectionner l'image zippée
 * Insérer la carte SD et ignorer l'éventuel message d'erreur
@@ -27,165 +47,139 @@
 * Alimenter la Jetson avec un cable Micro-USB ou une alimentation externe (jumper à modifier sur la carte pour sélectionner l'alimentation)
 
 
-# Configuration de la jetson Nano pour le Comuter Vision et le Deep Learning
+# Configuration de la jetson Nano
 * Utiliser les capacités d'alimentation maximale : `sudo nvpmodel -m 0` puis `sudo jetson_clocks`
 * Faisons de la place : `sudo apt-get purge libreoffice*`, `sudo apt-get clean`
 * Update du système : `sudo apt update && sudo apt upgrade`
+* `sudo reboot`
 
-## Install Tensorflow
+# Installation des dépendances nécessaires
+```bash
+sudo apt install nano screen
+sudo apt-get install build-essential cmake git unzip pkg-config libjpeg-dev libpng-dev libtiff-dev libavcodec-dev libavformat-dev libswscale-dev libgtk2.0-dev libcanberra-gtk* python3-dev python3-numpy python3-pip libxvidcore-dev libx264-dev libgtk-3-dev libtbb2 libtbb-dev libdc1394-22-dev libv4l-dev v4l-utils libavresample-dev libvorbis-dev libxine2-dev libfaac-dev libmp3lame-dev libtheora-dev libopencore-amrnb-dev libopencore-amrwb-dev libopenblas-dev libatlas-base-dev libblas-dev liblapack-dev libeigen3-dev gfortran libhdf5-dev protobuf-compiler libprotobuf-dev libgoogle-glog-dev libgflags-dev
+sudo apt-get install python3-pip 
+sudo -H pip3 install -U jetson-stats
+sudo apt-get install python-matplotlib
+```
+
+## Install virtualenv
+```bash
+sudo apt-get install virtualenv
+python3 -m virtualenv -p python3 <chosen_venv_name>
+source <chosen_venv_name>/bin/activate
+```
+
+## Install Tensorflow inside (virtualenv)
 https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html
 
-## Dépendances et pré-requis
 ```bash
-sudo apt-get install git cmake
-sudo apt-get install libatlas-base-dev gfortran
-sudo apt-get install libhdf5-serial-dev hdf5-tools
-sudo apt-get install python3-dev
-sudo apt-get install nano locate
-sudo apt-get install libfreetype6-dev python3-setuptools
-sudo apt-get install protobuf-compiler libprotobuf-dev openssl
-sudo apt-get install libssl-dev libcurl4-openssl-dev
-sudo apt-get install cython3
-sudo apt-get install libxml2-dev libxslt1-dev
+pip3 install -U numpy grpcio absl-py py-cpuinfo psutil portpicker six mock requests gast astor termcolor protobuf keras-applications keras-preprocessing wrapt google-pasta setuptools testresources
+env H5PY_SETUP_REQUIRES=0 pip install --no-binary=h5py h5py --no-build-isolation
+pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46 tensorflow
 ```
 
-## Mise à jour de CMake
 ```bash
-wget http://www.cmake.org/files/v3.13/cmake-3.13.0.tar.gz
-tar xpvf cmake-3.13.0.tar.gz cmake-3.13.0/
-cd cmake-3.13.0/
-./bootstrap --system-curl
-make -j4
+nano ~/.bashrc
+export OPENBLAS_CORETYPE=ARMV8
 ```
 
-## Mise à jour du profil bash :
+## Tester Tensorflow
 ```bash
-echo 'export PATH=/home/nvidia/cmake-3.13.0/bin/:$PATH' >> ~/.bashrc
-source ~/.bashrc
+source <chosen_venv_name>/bin/activate
+python
+import tensorflow as tf
+print(tf.__version__)
 ```
 
-## Préparer l'installation d'OpenCV
+## Installation de Jupyter notebook
+* `sudo apt install jupyter`
+* Générer un fichier de configuration : `jupyter notebook --generate-config`
+* Ajouter à la fin du fichier `/home/cooptek/.jupyter/jupyter_notebook_config.py`:
 ```bash
-sudo apt-get install build-essential pkg-config
-sudo apt-get install libtbb2 libtbb-dev
-sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev
-sudo apt-get install libxvidcore-dev libavresample-dev
-sudo apt-get install libtiff-dev libjpeg-dev libpng-dev
-sudo apt-get install python-tk libgtk-3-dev
-sudo apt-get install libcanberra-gtk-module libcanberra-gtk3-module
-sudo apt-get install libv4l-dev libdc1394-22-dev
+import os
+c = get_config()
+os.environ['LD_PRELOAD'] = '/usr/lib/aarch64-linux-gnu/libgomp.so.1'
+c.Spawner.env.update('LD_PRELOAD')
 ```
+* Pour lancer un nouveau notebook : `jupyter notebook`
 
-## Création d'un environnement virtuel pour Python
-```bash
-wget https://bootstrap.pypa.io/get-pip.py
-sudo python3 get-pip.py
-rm get-pip.py
-sudo pip install virtualenv virtualenvwrapper
-nano ~/.bashrc :
-* export WORKON_HOME=$HOME/.virtualenvs
-* export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
-* source /usr/local/bin/virtualenvwrapper.sh
-source ~/.bashrc
-```
-Redémmarrer le terminal puis :
-```bash
-mkvirtualenv py3 -p python3
-workon py3cv4
-```
-
-## Installer le compilateur Protobuf (pour que Tensorflow aille vite, 1h d'installation)
-```bash
-wget https://raw.githubusercontent.com/jkjung-avt/jetson_nano/master/install_protobuf-3.6.1.sh
-sudo chmod +x install_protobuf-3.6.1.sh
-./install_protobuf-3.6.1.sh
-```
-
-## Installer le compilateur Protobuf dans l'environnement virtuel :
-```bash
-workon py3
-cd ~
-cp -r ~/src/protobuf-3.6.1/python/ .
-cd python
-python setup.py install --cpp_implementation
-```
-
-## Installation de Tensorflow
-```bash
-sudo pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46 tensorflow
-sudo pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46 'tensorflow<2'
-sudo pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v$JP_VERSION tensorflow where JP_VERSION The major and minor version of JetPack you are using, such as 42 for JetPack 4.2.2 or 33 for JetPack 3.3.1.
-```
-```bash
-sudo pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v$JP_VERSION tensorflow==$TF_VERSION+nv$NV_VERSION
-
-Where:
-JP_VERSION
-The major and minor version of JetPack you are using, such as 42 for JetPack 4.2.2 or 33 for JetPack 3.3.1.
-TF_VERSION
-The released version of TensorFlow, for example, 1.13.1.
-NV_VERSION
-The monthly NVIDIA container version of TensorFlow, for example, 19.01.
-```
-
-## Step #12: Install the TensorFlow Object Detection API on Jetson Nano
+## Installation d'OpenCV avec CUDA
 ```bash
 cd ~
-workon py3cv4
-git clone https://github.com/tensorflow/models
-cd ~
-git clone https://github.com/cocodataset/cocoapi.git
-cd cocoapi/PythonAPI
-python setup.py install
-```
-
-## Installation et compilation d'OpenCV sur Jetson Nano
-```bash
-cd ~
-wget -O opencv.zip https://github.com/opencv/opencv/archive/4.1.2.zip
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.1.2.zip
+wget -O opencv.zip https://github.com/opencv/opencv/archive/4.5.4.zip
+wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.4.zip
 unzip opencv.zip
 unzip opencv_contrib.zip
-mv opencv-4.1.2 opencv
-mv opencv_contrib-4.1.2 opencv_contrib
-workon py3cv4
-cd opencv
+mv opencv-4.5.4 opencv
+mv opencv_contrib-4.5.4 opencv_contrib
+rm opencv.zip
+rm opencv_contrib.zip
+```
+
+```bash
+cd ~/opencv
 mkdir build
 cd build
 ```
 
-Compiler OpenCV avec CMake :
 ```bash
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
-	-D WITH_CUDA=ON \
-	-D CUDA_ARCH_PTX="" \
-	-D CUDA_ARCH_BIN="5.3,6.2,7.2" \
-	-D WITH_CUBLAS=ON \
-	-D WITH_LIBV4L=ON \
-	-D BUILD_opencv_python3=ON \
-	-D BUILD_opencv_python2=OFF \
-	-D BUILD_opencv_java=OFF \
-	-D WITH_GSTREAMER=ON \
-	-D WITH_GTK=ON \
-	-D BUILD_TESTS=OFF \
-	-D BUILD_PERF_TESTS=OFF \
-	-D BUILD_EXAMPLES=OFF \
-	-D OPENCV_ENABLE_NONFREE=ON \
-	-D OPENCV_EXTRA_MODULES_PATH=/home/`whoami`/opencv_contrib/modules ..
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+    -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
+    -D WITH_OPENCL=OFF \
+    -D WITH_CUDA=ON \
+    -D CUDA_ARCH_BIN=5.3 \
+    -D CUDA_ARCH_PTX="" \
+    -D WITH_CUDNN=ON \
+    -D WITH_CUBLAS=ON \
+    -D ENABLE_FAST_MATH=ON \
+    -D CUDA_FAST_MATH=ON \
+    -D OPENCV_DNN_CUDA=ON \
+    -D ENABLE_NEON=ON \
+    -D WITH_QT=OFF \
+    -D WITH_OPENMP=ON \
+    -D WITH_OPENGL=ON \
+    -D BUILD_TIFF=ON \
+    -D WITH_FFMPEG=ON \
+    -D WITH_GSTREAMER=ON \
+    -D WITH_TBB=ON \
+    -D BUILD_TBB=ON \
+    -D BUILD_TESTS=OFF \
+    -D WITH_EIGEN=ON \
+    -D WITH_V4L=ON \
+    -D WITH_LIBV4L=ON \
+    -D OPENCV_ENABLE_NONFREE=ON \
+    -D INSTALL_C_EXAMPLES=OFF \
+    -D INSTALL_PYTHON_EXAMPLES=OFF \
+    -D BUILD_NEW_PYTHON_SUPPORT=ON \
+    -D BUILD_opencv_python3=TRUE \
+    -D OPENCV_GENERATE_PKGCONFIG=ON \
+    -D BUILD_EXAMPLES=OFF ..
 ```
 
-La suite prend approximativement 2,5 heures
-```bash 
-make -j4
-sudo make install
-cd ~/.virtualenvs/py3/lib/python3.6/site-packages/
-ln -s /usr/local/lib/python3.6/site-packages/cv2/python3.6/cv2.cpython-36m-aarch64-linux-gnu.so cv2.so
-```
+Increase swap memory
+`sudo apt-get install dphys-swapfile`
+Changer la limite du swap dans le fichier `/sbin/dphys-swapfile`: `CONF_MAXSWAP=4096`
+Changer la valeur du swap dans le fichier `/etc/dphys-swapfile`: `CONF_SWAPSIZE=4096`
 
-## Autres dépendances
 ```bash
-pip install matplotlib scikit-learn
-pip install pillow imutils scikit-image
-pip install dlib
-pip install lxml progressbar2
+make -j1
+sudo make install
 ```
+
+```bash
+sudo rm -rf ~/opencv
+sudo rm -rf ~/opencv_contrib
+```
+
+## Vérifier les datasets Keras déjà téléchargée :
+```bash
+cd ~/.keras/datasets
+```
+
+
+```bash
+pip install --user ipykernel
+
+``
