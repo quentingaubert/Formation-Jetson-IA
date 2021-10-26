@@ -69,7 +69,7 @@ python3 -m virtualenv -p python3 <chosen_venv_name>
 source <chosen_venv_name>/bin/activate
 ```
 
-## Install Tensorflow inside (virtualenv)
+## Install Tensorflow inside Virtualenv
 https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html
 
 ```bash
@@ -81,6 +81,7 @@ pip3 install --extra-index-url https://developer.download.nvidia.com/compute/red
 ```bash
 nano ~/.bashrc
 export OPENBLAS_CORETYPE=ARMV8
+restart terminal
 ```
 
 ## Tester Tensorflow
